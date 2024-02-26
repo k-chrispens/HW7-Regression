@@ -129,7 +129,9 @@ class LogisticRegressor(BaseRegressor):
         Returns: 
             The predicted labels (y_pred) for given X.
         """
-        pass
+        linear_model = np.dot(X, self.W) # calculate linear model prediction
+        y_pred = 1 / (1 + np.exp(-linear_model)) # sigmoid function to get probability
+        return y_pred
     
     def loss_function(self, y_true, y_pred) -> float:
         """
@@ -174,4 +176,4 @@ class LogisticRegressor(BaseRegressor):
         Returns: 
             Vector of gradients.
         """
-        pass
+        
