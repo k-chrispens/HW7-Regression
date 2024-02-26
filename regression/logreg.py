@@ -119,7 +119,7 @@ class LogisticRegressor(BaseRegressor):
     
     def make_prediction(self, X) -> np.array:
         """
-        TODO: Implement logistic function to get estimates (y_pred) for input X values. The logistic
+        Implement logistic function to get estimates (y_pred) for input X values. The logistic
         function is a transformation of the linear model into an "S-shaped" curve that can be used
         for binary classification.
 
@@ -129,6 +129,14 @@ class LogisticRegressor(BaseRegressor):
         Returns: 
             The predicted labels (y_pred) for given X.
         """
+        # Check for valid inputs
+        try:
+            X = np.array(X)
+        except:
+            raise ValueError("X must be castable to a numpy array.")
+        if X.shape[1] != self.W.shape[0]:
+            raise ValueError("Number of features in X must match number of weights.")
+        
         linear_model = np.dot(X, self.W) # calculate linear model prediction
         y_pred = 1 / (1 + np.exp(-linear_model)) # sigmoid function to get probability
         return y_pred
@@ -166,7 +174,7 @@ class LogisticRegressor(BaseRegressor):
         
     def calculate_gradient(self, y_true, X) -> np.ndarray:
         """
-        TODO: Calculate the gradient of the loss function with respect to the given data. This
+        Calculate the gradient of the loss function with respect to the given data. This
         will be used to update the weights during training.
 
         Arguments:
@@ -176,4 +184,19 @@ class LogisticRegressor(BaseRegressor):
         Returns: 
             Vector of gradients.
         """
+        # Check for valid inputs
+        try:
+            y_true = np.array(y_true)
+            X = np.array(X)
+        except:
+            raise ValueError("True labels and X must be castable to numpy arrays.")
+        if len(y_true) == 0:
+            return 0
+        if len(y_true) != X.shape[0]:
+            raise ValueError("Length of true labels must match number of rows in X.")
         
+        # Get predicted probabilities
+        y_pred = self.make_prediction(X)
+        # Chain rule to get gradient = 1/N * X^T * (y_pred - y_true)
+        grad = np.dot(X.T, (y_pred - y_true)) / len(y_true)
+        return grad
