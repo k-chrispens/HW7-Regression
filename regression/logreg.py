@@ -133,7 +133,7 @@ class LogisticRegressor(BaseRegressor):
     
     def loss_function(self, y_true, y_pred) -> float:
         """
-        TODO: Implement binary cross entropy loss, which assumes that the true labels are either
+        Implement binary cross entropy loss, which assumes that the true labels are either
         0 or 1. (This can be extended to more than two classes, but here we have just two.)
 
         Arguments:
@@ -143,7 +143,24 @@ class LogisticRegressor(BaseRegressor):
         Returns: 
             The mean loss (a single number).
         """
-        pass
+        # Check for valid inputs
+        try:
+            y_true = np.array(y_true)
+            y_pred = np.array(y_pred)
+        except:
+            raise ValueError("True and predicted labels must be castable to numpy arrays.")
+        if len(y_true) == 0:
+            return 0
+        if len(y_true) != len(y_pred):
+            raise ValueError("Length of true and predicted labels must be the same.")
+        if np.any(y_pred < 0) or np.any(y_pred > 1):
+            raise ValueError("Predicted labels must be between 0 and 1.")
+        if np.any(y_true not in [0, 1]):
+            raise ValueError("True labels must be either 0 or 1.")
+        
+        # Calculate binary cross entropy loss, H = -1/N * sum(y_true * log(y_pred) + (1 - y_true) * log(1 - y_pred))
+        H = -np.average(y_true * np.log(y_pred) - (1 - y_true) * np.log(1 - y_pred))
+        return H
         
     def calculate_gradient(self, y_true, X) -> np.ndarray:
         """
