@@ -1,11 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 # Base class for generic regressor
 # (this is already complete!)
-class BaseRegressor():
+class BaseRegressor:
 
-    def __init__(self, num_feats, learning_rate=0.01, tol=0.001, max_iter=100, batch_size=10):
+    def __init__(
+        self, num_feats, learning_rate=0.01, tol=0.001, max_iter=100, batch_size=10
+    ):
 
         # Weights are randomly initialized
         self.W = np.random.randn(num_feats + 1).flatten()
@@ -20,22 +23,22 @@ class BaseRegressor():
         # Define empty lists to store losses over training
         self.loss_hist_train = []
         self.loss_hist_val = []
-    
+
     def make_prediction(self, X):
         raise NotImplementedError
-    
+
     def loss_function(self, y_true, y_pred):
         raise NotImplementedError
-        
+
     def calculate_gradient(self, y_true, X):
         raise NotImplementedError
-    
+
     def train_model(self, X_train, y_train, X_val, y_val):
 
         # Padding data with vector of ones for bias term
         X_train = np.hstack([X_train, np.ones((X_train.shape[0], 1))])
         X_val = np.hstack([X_val, np.ones((X_val.shape[0], 1))])
-    
+
         # Defining intitial values for while loop
         prev_update_size = 1
         iteration = 1
@@ -68,7 +71,7 @@ class BaseRegressor():
                 # Update weights
                 prev_W = self.W
                 grad = self.calculate_gradient(y_train, X_train)
-                new_W = prev_W - self.lr * grad 
+                new_W = prev_W - self.lr * grad
                 self.W = new_W
 
                 # Save parameter update size
@@ -83,20 +86,22 @@ class BaseRegressor():
 
             # Update iteration
             iteration += 1
-    
+
     def plot_loss_history(self):
 
         # Make sure training has been run
-        assert len(self.loss_hist_train) > 0, "Need to run training before plotting loss history."
+        assert (
+            len(self.loss_hist_train) > 0
+        ), "Need to run training before plotting loss history."
 
         # Create plot
         fig, axs = plt.subplots(2, figsize=(8, 8))
-        fig.suptitle('Loss History')
+        fig.suptitle("Loss History")
         axs[0].plot(np.arange(len(self.loss_hist_train)), self.loss_hist_train)
-        axs[0].set_title('Training')
+        axs[0].set_title("Training")
         axs[1].plot(np.arange(len(self.loss_hist_val)), self.loss_hist_val)
-        axs[1].set_title('Validation')
-        plt.xlabel('Steps')
+        axs[1].set_title("Validation")
+        plt.xlabel("Steps")
         fig.tight_layout()
         plt.show()
 
@@ -104,43 +109,46 @@ class BaseRegressor():
         self.W = np.random.randn(self.num_feats + 1).flatten()
         self.loss_hist_train = []
         self.loss_hist_val = []
-        
+
+
 # Implement logistic regression as a subclass
 class LogisticRegressor(BaseRegressor):
 
-    def __init__(self, num_feats, learning_rate=0.01, tol=0.001, max_iter=100, batch_size=10):
+    def __init__(
+        self, num_feats, learning_rate=0.01, tol=0.001, max_iter=100, batch_size=10
+    ):
         super().__init__(
             num_feats,
             learning_rate=learning_rate,
             tol=tol,
             max_iter=max_iter,
-            batch_size=batch_size
+            batch_size=batch_size,
         )
-    
+
     def make_prediction(self, X) -> np.array:
         """
         Implement logistic function to get estimates (y_pred) for input X values. The logistic
         function is a transformation of the linear model into an "S-shaped" curve that can be used
         for binary classification.
 
-        Arguments: 
+        Arguments:
             X (np.ndarray): Matrix of feature values.
 
-        Returns: 
+        Returns:
             The predicted labels (y_pred) for given X.
         """
         # Check for valid inputs
-        try:
-            X = np.array(X)
-        except:
-            raise ValueError("X must be castable to a numpy array.")
-        if X.shape[1] != self.W.shape[0]:
+        if not isinstance(X, np.ndarray):
+            raise ValueError("Input X must be a numpy array.")
+        if len(X.shape) != 2:
+            raise ValueError("Input X must be a 2D array (even if the length of the row dimension is only 1).")
+        if X.shape[1] != self.W.shape[0]: # include bias term
             raise ValueError("Number of features in X must match number of weights.")
-        
-        linear_model = np.dot(X, self.W) # calculate linear model prediction
-        y_pred = 1 / (1 + np.exp(-linear_model)) # sigmoid function to get probability
+
+        linear_model = np.dot(X, self.W)  # calculate linear model prediction
+        y_pred = 1 / (1 + np.exp(-linear_model))  # sigmoid function to get probability
         return y_pred
-    
+
     def loss_function(self, y_true, y_pred) -> float:
         """
         Implement binary cross entropy loss, which assumes that the true labels are either
@@ -150,28 +158,32 @@ class LogisticRegressor(BaseRegressor):
             y_true (np.array): True labels.
             y_pred (np.array): Predicted labels.
 
-        Returns: 
+        Returns:
             The mean loss (a single number).
         """
         # Check for valid inputs
         try:
-            y_true = np.array(y_true)
-            y_pred = np.array(y_pred)
+            y_true = np.array(list(y_true))
+            y_pred = np.array(list(y_pred))
         except:
-            raise ValueError("True and predicted labels must be castable to numpy arrays.")
-        if len(y_true) == 0:
-            return 0
-        if len(y_true) != len(y_pred):
+            raise ValueError(
+                "True and predicted labels must be castable to numpy arrays."
+            )
+        if y_true.shape[0] != y_pred.shape[0]:
             raise ValueError("Length of true and predicted labels must be the same.")
         if np.any(y_pred < 0) or np.any(y_pred > 1):
             raise ValueError("Predicted labels must be between 0 and 1.")
-        if np.any(y_true not in [0, 1]):
+        if not np.all(np.isin(y_true, [0, 1])):
             raise ValueError("True labels must be either 0 or 1.")
-        
+
         # Calculate binary cross entropy loss, H = -1/N * sum(y_true * log(y_pred) + (1 - y_true) * log(1 - y_pred))
-        H = -np.average(y_true * np.log(y_pred) - (1 - y_true) * np.log(1 - y_pred))
+        epsilon = 1e-15  # to prevent log(0)
+        H = -np.mean(
+            y_true * np.log(y_pred + epsilon)
+            + (1 - y_true) * np.log(1 - y_pred + epsilon)
+        )
         return H
-        
+
     def calculate_gradient(self, y_true, X) -> np.ndarray:
         """
         Calculate the gradient of the loss function with respect to the given data. This
@@ -181,20 +193,15 @@ class LogisticRegressor(BaseRegressor):
             y_true (np.array): True labels.
             X (np.ndarray): Matrix of feature values.
 
-        Returns: 
+        Returns:
             Vector of gradients.
         """
         # Check for valid inputs
-        try:
-            y_true = np.array(y_true)
-            X = np.array(X)
-        except:
-            raise ValueError("True labels and X must be castable to numpy arrays.")
-        if len(y_true) == 0:
-            return 0
-        if len(y_true) != X.shape[0]:
-            raise ValueError("Length of true labels must match number of rows in X.")
-        
+        if not isinstance(y_true, np.ndarray):
+            raise ValueError("True labels must be a numpy array.")
+        if not isinstance(X, np.ndarray):
+            raise ValueError("Input X must be a numpy array.")
+
         # Get predicted probabilities
         y_pred = self.make_prediction(X)
         # Chain rule to get gradient = 1/N * X^T * (y_pred - y_true)
